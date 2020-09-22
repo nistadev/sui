@@ -5,9 +5,7 @@ process.on('unhandledRejection', err => {
   throw err
 })
 
-const pkg = require('../package')
 const program = require('commander')
-const checkForUpdate = require('update-check')
 const path = require('path')
 const chalk = require('chalk')
 const WebpackDevServer = require('webpack-dev-server')
@@ -26,7 +24,6 @@ const linkLoaderConfigBuilder = require('../loaders/linkLoaderConfigBuilder')
 
 const DEFAULT_PORT = parseInt(process.env.PORT, 10) || 3000
 const HOST = process.env.HOST || '0.0.0.0'
-let update = null
 
 if (!module.parent) {
   program
@@ -102,22 +99,6 @@ const start = async ({
       })
     })
   })
-
-  try {
-    update = await checkForUpdate(pkg)
-  } catch (err) {
-    console.error(`Failed to check for updates: ${err}`)
-  }
-
-  if (update) {
-    console.log(
-      chalk.gray(
-        `The latest version of ${require('../package.json').name} is ${
-          update.latest
-        }. Please update!`
-      )
-    )
-  }
 }
 
 if (!module.parent) {

@@ -1,27 +1,18 @@
 /* eslint-disable no-console */
 const webpack = require('webpack')
 const path = require('path')
-const zlib = require('zlib')
 
-const CompressionPlugin = require('compression-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const ManifestPlugin = require('webpack-manifest-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin')
 const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin')
-const {GenerateSW} = require('workbox-webpack-plugin')
 
 const {when, cleanList, envVars, MAIN_ENTRY_POINT, config} = require('./shared')
 const minifyJs = require('./shared/minify-js')
 const definePlugin = require('./shared/define')
 const babelRules = require('./shared/module-rules-babel')
-const manifestLoaderRules = require('./shared/module-rules-manifest-loader')
 const {splitChunks} = require('./shared/optimization-split-chunks')
-const {
-  navigateFallbackDenylist,
-  navigateFallback,
-  runtimeCaching
-} = require('./shared/precache')
 const {sourceMap} = require('./shared/config')
 const parseAlias = require('./shared/parse-alias')
 
@@ -30,7 +21,6 @@ const LoaderUniversalOptionsPlugin = require('./plugins/loader-options')
 
 const PUBLIC_PATH = process.env.CDN || config.cdn || '/'
 
-const hasBrotliSupport = Boolean(zlib.brotliCompress)
 const filename = config.onlyHash
   ? '[contenthash:8].js'
   : '[name].[contenthash:8].js'
@@ -110,50 +100,8 @@ module.exports = {
     new ManifestPlugin({
       fileName: 'asset-manifest.json'
     }),
-    when(
-      config.offline && (config.offline.fallback || config.offline.runtime),
-      () =>
-        new GenerateSW({
-          skipWaiting: true,
-          clientsClaim: true,
-          cleanupOutdatedCaches: true,
-          directoryIndex: config.offline.directoryIndex,
-          navigateFallback: navigateFallback(
-            config.offline.fallback,
-            PUBLIC_PATH
-          ),
-          navigateFallbackDenylist: navigateFallbackDenylist(
-            config.offline.denylist
-          ),
-          runtimeCaching: runtimeCaching(config.offline.runtime),
-          importScripts: config.offline.importScripts || [],
-          exclude: [/\.map$/, /asset-manifest\.json$/, /LICENSE\.txt$/]
-        })
-    ),
     when(config.externals, () => new Externals({files: config.externals})),
-    new LoaderUniversalOptionsPlugin(require('./shared/loader-options')),
-    when(
-      config.manualCompression,
-      () =>
-        new CompressionPlugin({
-          filename: '[path].gz',
-          threshold: 0,
-          minRatio: 2,
-          test: /\.(js|css)$/i
-        })
-    ),
-    when(
-      config.manualCompression && hasBrotliSupport,
-      () =>
-        new CompressionPlugin({
-          filename: '[path].br',
-          algorithm: 'brotliCompress',
-          threshold: 0,
-          minRatio: 2,
-          test: /\.(js|css)$/i,
-          compressionOptions: {level: 11}
-        })
-    )
+    new LoaderUniversalOptionsPlugin(require('./shared/loader-options'))
   ]),
   module: {
     rules: cleanList([
@@ -172,18 +120,8 @@ module.exports = {
           require.resolve('postcss-loader'),
           require.resolve('sass-loader')
         ])
-      },
-      when(config['externals-manifest'], () =>
-        manifestLoaderRules(config['externals-manifest'])
-      )
+      }
     ])
-  },
-  resolveLoader: {
-    alias: {
-      'externals-manifest-loader': require.resolve(
-        './loaders/ExternalsManifestLoader'
-      )
-    }
   },
   node: {
     fs: 'empty',

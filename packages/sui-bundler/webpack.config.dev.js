@@ -2,12 +2,10 @@ const path = require('path')
 const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const LoaderUniversalOptionsPlugin = require('./plugins/loader-options')
-const eslintFormatter = require('react-dev-utils/eslintFormatter')
 const definePlugin = require('./shared/define')
-const manifestLoaderRules = require('./shared/module-rules-manifest-loader')
 const parseAlias = require('./shared/parse-alias')
 
-const {envVars, MAIN_ENTRY_POINT, config, cleanList, when} = require('./shared')
+const {envVars, MAIN_ENTRY_POINT, config, cleanList} = require('./shared')
 
 const EXCLUDED_FOLDERS_REGEXP = new RegExp(
   `node_modules(?!${path.sep}@s-ui(${path.sep}svg|${path.sep}studio)(${path.sep}workbench)?${path.sep}src)`
@@ -49,7 +47,6 @@ const webpackConfig = {
   plugins: [
     new webpack.EnvironmentPlugin(envVars(config.env)),
     definePlugin({__DEV__: true}),
-    new webpack.NoEmitOnErrorsPlugin(),
     new HtmlWebpackPlugin({
       template: './index.html',
       inject: true,
@@ -57,34 +54,8 @@ const webpackConfig = {
     }),
     new LoaderUniversalOptionsPlugin(require('./shared/loader-options'))
   ],
-  resolveLoader: {
-    alias: {
-      'externals-manifest-loader': require.resolve(
-        './loaders/ExternalsManifestLoader'
-      )
-    }
-  },
   module: {
     rules: cleanList([
-      {
-        test: /\.(js|jsx|mjs)$/,
-        enforce: 'pre',
-        use: [
-          {
-            options: {
-              formatter: eslintFormatter,
-              eslintPath: require.resolve('eslint'),
-              baseConfig: {
-                extends: [require.resolve('@s-ui/lint/eslintrc.js')]
-              },
-              ignore: false,
-              useEslintrc: false
-            },
-            loader: require.resolve('eslint-loader')
-          }
-        ],
-        exclude: EXCLUDED_FOLDERS_REGEXP
-      },
       {
         test: /\.jsx?$/,
         exclude: EXCLUDED_FOLDERS_REGEXP,
@@ -110,20 +81,11 @@ const webpackConfig = {
         test: /(\.css|\.scss)$/,
         use: cleanList([
           'style-loader',
-          when(config['externals-manifest'], () => ({
-            loader: 'externals-manifest-loader',
-            options: {
-              manifestURL: config['externals-manifest']
-            }
-          })),
           'css-loader',
           'postcss-loader',
           'sass-loader'
         ])
-      },
-      when(config['externals-manifest'], () =>
-        manifestLoaderRules(config['externals-manifest'])
-      )
+      }
     ])
   },
   devtool:
