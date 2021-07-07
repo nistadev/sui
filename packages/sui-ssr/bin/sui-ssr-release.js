@@ -9,6 +9,7 @@ program
   .option('-B, --branch <branch>', 'Release branch. Will be master by default')
   .option('-E, --email <email>', 'Releaser´s email')
   .option('-N, --name <name>', 'Releaser´s name')
+  .option('-C, --commit <commit>', 'Commit to tag')
   .option('-sci, --skip-ci', 'Skip CI')
   .on('--help', () => {
     console.log('  Description:')
@@ -27,7 +28,7 @@ program
   })
   .parse(process.argv)
 
-const {branch = 'master', email, name} = program
+const {branch = 'master', email, name, skipCi = false, commit} = program
 
 const execute = async (cmd, full) => {
   try {
@@ -43,6 +44,12 @@ const execute = async (cmd, full) => {
   }
 }
 
+const getCommitToTag = async () => {
+  if (commit) return commit
+
+  return execute('git rev-parse HEAD')
+}
+
 ;(async () => {
   const cwd = process.cwd()
   const {GH_TOKEN} = process.env
@@ -54,6 +61,14 @@ const execute = async (cmd, full) => {
   try {
     await execute(`git checkout ${branch}`)
     await execute(`git pull origin ${branch}`)
+    const commitToTag = await getCommitToTag()
+    const hasTag = await execute(`git tag --points-at ${commitToTag}`)
+
+    if (hasTag) {
+      console.log('We are going to release the current tag:', hasTag)
+      return await execute('npm run release')
+    }
+
     const repoURL = await execute('git config --get remote.origin.url')
     const gitURL = GitUrlParse(repoURL).toString('https')
     const authURL = new URL(gitURL)
@@ -67,7 +82,7 @@ const execute = async (cmd, full) => {
     await execute(`rm -Rf ${path.join(cwd, 'package-lock.json')}`)
 
     await execute(
-      'npm install --package-lock-only --prefer-online --progress false --loglevel error --legacy-peer-deps'
+      'npm install --package-lock-only --progress false --loglevel error --legacy-peer-deps'
     )
 
     await execute('npm version minor --no-git-tag-version')
