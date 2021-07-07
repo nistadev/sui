@@ -4,7 +4,6 @@ const program = require('commander')
 const rimraf = require('rimraf')
 const path = require('path')
 const archive = require('../archive')
-require('colors')
 
 const pkg = require(path.join(process.cwd(), 'package.json'))
 const REMOVE_ZIP_PATH = path.join(process.cwd(), '*-sui-ssr.zip')
