@@ -10,6 +10,7 @@ program
   .option('-E, --email <email>', 'Releaser´s email')
   .option('-N, --name <name>', 'Releaser´s name')
   .option('-C, --commit <commit>', 'Commit to tag')
+  .option('-D, --clean', 'Deletes package-lock')
   .option('-sci, --skip-ci', 'Skip CI')
   .on('--help', () => {
     console.log('  Description:')
@@ -28,7 +29,7 @@ program
   })
   .parse(process.argv)
 
-const {branch = 'master', email, name, skipCi = false, commit} = program
+const {branch = 'master', email, name, skipCi = false, commit, clean} = program
 
 const execute = async (cmd, full) => {
   try {
@@ -81,9 +82,11 @@ const getCommitToTag = async () => {
 
     await execute(`rm -Rf ${path.join(cwd, 'package-lock.json')}`)
 
-    await execute(
-      'npm install --package-lock-only --progress false --loglevel error --legacy-peer-deps'
-    )
+    if (!clean) {
+      await execute(
+        'npm install --package-lock-only --progress false --loglevel error --legacy-peer-deps'
+      )
+    }
 
     await execute('npm version minor --no-git-tag-version')
     const nextVersion = require(path.join(cwd, 'package.json')).version
