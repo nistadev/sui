@@ -10,7 +10,6 @@ import basicAuth from 'express-basic-auth'
 import path from 'path'
 import fs from 'fs'
 import jsYaml from 'js-yaml'
-import parseDomain from 'parse-domain'
 import compression from 'compression'
 import ssrConf from './config'
 import {
@@ -90,22 +89,6 @@ const _memoizedHtmlTemplatesMapping = {}
   app.use(useStaticsByHost(express.static))
 
   app.use(hooks[TYPES.APP_CONFIG_SETUP])
-
-  ssrConf.forceWWW &&
-    app.use((req, res, next) => {
-      const parsedUrl = parseDomain(req.hostname, {
-        customTlds: /localhost|\.local/
-      })
-
-      !parsedUrl || parsedUrl.tld === 'localhost' // eslint-disable-line
-        ? next()
-        : parsedUrl.subdomain
-        ? next()
-        : res.redirect(
-            `${req.protocol}://www.` + req.headers.host + req.url,
-            301
-          )
-    })
 
   app.use((req, res, next) => {
     const shouldUseIndexWhitoutThirdParties =
