@@ -90,13 +90,9 @@ const getCommitToTag = async () => {
 
     await execute('npm version minor --no-git-tag-version')
     const nextVersion = require(path.join(cwd, 'package.json')).version
+    await execute(`git add ${path.join(cwd, 'package.json')}`)
     if (!clean) {
-      await execute(
-        `git add ${path.join(cwd, 'package.json')} ${path.join(
-          cwd,
-          'package-lock.json'
-        )}`
-      )
+      await execute(`git add ${path.join(cwd, 'package-lock.json')}`)
     }
 
     await execute(`git commit -m "release(META): ${nextVersion}"`)
